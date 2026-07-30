@@ -1,0 +1,31 @@
+dataset:
+  id: NSIDC-0611
+  version: "4.1"
+  base_url: https://daacdata.apps.nsidc.org/pub/DATASETS/nsidc0611_seaice_age_v4/data
+  start_year: 1984
+  end_year: 2024
+  fixed_week: 11
+  seasonal_year: 2024
+  pixel_size_m: 12534
+  expected_weeks: 52
+  expected_rows: 722
+  expected_columns: 722
+
+paths:
+  raw: data/raw/nsidc0611
+  processed: data/processed
+
+visual:
+  height:
+    first_year: 0.10
+    second_year: 0.25
+    third_year: 0.45
+    fourth_year: 0.70
+    fifth_year_plus: 1.00
+  opacity:
+    first_year: 0.35
+    second_year: 0.50
+    third_year: 0.70
+    fourth_year: 0.85
+    fifth_year_plus: 1.00
+
