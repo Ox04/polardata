@@ -200,7 +200,7 @@ def _seasonal_frame(
     )
     draw.text(
         (SIDEBAR_LEFT, 340),
-        "북극 해빙 면적",
+        "북극 해빙 범위",
         font=heading,
         fill=(135, 172, 186),
     )

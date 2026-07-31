@@ -202,7 +202,7 @@ def _draw_sidebar(
     )
     draw.text(
         (SIDEBAR_LEFT + 300, 407),
-        f"5년 이상 얼음\n{interpolated_old_ice:,} 격자",
+        f"5년차 이상 얼음\n{interpolated_old_ice:,} 격자",
         font=body_font,
         fill=(175, 196, 201),
         spacing=6,
@@ -254,7 +254,7 @@ def _draw_sidebar(
         font=heading_font,
         fill=(135, 172, 186),
     )
-    labels = ("1년", "2년", "3년", "4년", "5년+")
+    labels = ("0–1년", "1–2년", "2–3년", "3–4년", "4년 초과")
     for offset, (age_class, label) in enumerate(zip(range(1, 6), labels)):
         x = SIDEBAR_LEFT + offset * 112
         color = TARGET_COLORS[age_class][:3]
