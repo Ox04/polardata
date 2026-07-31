@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import csv
+import hashlib
 import netrc
 import os
 import re
+from datetime import UTC, datetime
 from pathlib import Path
 
 import requests
@@ -54,6 +57,54 @@ def is_netcdf_file(path: str | Path) -> bool:
     with source.open("rb") as file:
         magic = file.read(8)
     return magic.startswith(NETCDF_CLASSIC_MAGIC) or magic == NETCDF4_MAGIC
+
+
+def validate_collection(
+    directory: str | Path,
+    start_year: int,
+    end_year: int,
+) -> list[Path]:
+    files = sorted(Path(directory).glob("iceage_nh_12.5km_*_v4.1.nc"))
+    years = [parse_year(path) for path in files]
+    expected = list(range(start_year, end_year + 1))
+    if years != expected:
+        missing = sorted(set(expected) - set(years))
+        extra = sorted(set(years) - set(expected))
+        raise ValueError(f"연도 구성이 올바르지 않습니다. 누락={missing}, 추가={extra}")
+    invalid = [path.name for path in files if not is_netcdf_file(path)]
+    if invalid:
+        raise ValueError(f"NetCDF 형식이 아닌 파일이 있습니다: {invalid}")
+    return files
+
+
+def write_file_manifest(files: list[Path], output: str | Path) -> Path:
+    target = Path(output)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with target.open("w", encoding="utf-8", newline="") as file:
+        writer = csv.DictWriter(
+            file,
+            fieldnames=("year", "filename", "bytes", "sha256", "downloaded_at"),
+        )
+        writer.writeheader()
+        for path in files:
+            digest = hashlib.sha256()
+            with path.open("rb") as source:
+                for chunk in iter(lambda: source.read(1024 * 1024), b""):
+                    digest.update(chunk)
+            downloaded_at = datetime.fromtimestamp(
+                path.stat().st_mtime,
+                UTC,
+            ).isoformat()
+            writer.writerow(
+                {
+                    "year": parse_year(path),
+                    "filename": path.name,
+                    "bytes": path.stat().st_size,
+                    "sha256": digest.hexdigest(),
+                    "downloaded_at": downloaded_at,
+                }
+            )
+    return target
 
 
 def download_year(

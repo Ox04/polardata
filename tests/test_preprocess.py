@@ -6,7 +6,12 @@ import numpy as np
 import xarray as xr
 from PIL import Image
 
-from polar_memory.nsidc import is_netcdf_file
+from polar_memory.nsidc import (
+    annual_filename,
+    is_netcdf_file,
+    validate_collection,
+    write_file_manifest,
+)
 from polar_memory.preprocess import (
     LAND,
     UNCALCULATED_OCEAN,
@@ -17,6 +22,7 @@ from polar_memory.preprocess import (
     summarize,
     write_summary,
 )
+from polar_memory.video import write_concat_manifest
 
 
 def test_classify_age_codes() -> None:
@@ -81,3 +87,32 @@ def test_netcdf_magic_detection(tmp_path) -> None:
     assert is_netcdf_file(classic)
     assert is_netcdf_file(netcdf4)
     assert not is_netcdf_file(html)
+
+
+def test_validate_collection(tmp_path) -> None:
+    for year in (1984, 1985):
+        path = tmp_path / annual_filename(year)
+        path.write_bytes(b"\x89HDF\r\n\x1a\n" + b"\x00" * 16)
+
+    files = validate_collection(tmp_path, 1984, 1985)
+    assert [path.name for path in files] == [
+        annual_filename(1984),
+        annual_filename(1985),
+    ]
+    manifest = write_file_manifest(files, tmp_path / "manifest.csv")
+    with manifest.open(encoding="utf-8") as file:
+        records = list(csv.DictReader(file))
+    assert records[0]["year"] == "1984"
+    assert len(records[0]["sha256"]) == 64
+
+
+def test_write_concat_manifest_repeats_last_frame(tmp_path) -> None:
+    frames = [tmp_path / "1984.png", tmp_path / "1985.png"]
+    manifest = write_concat_manifest(
+        frames,
+        tmp_path / "timeline.ffconcat",
+        seconds_per_frame=0.6,
+    )
+    text = manifest.read_text(encoding="utf-8")
+    assert text.count("duration 0.600000") == 2
+    assert text.count("1985.png") == 2

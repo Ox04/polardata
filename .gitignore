@@ -13,7 +13,14 @@ data/interim/*
 data/processed/*
 !data/raw/.gitkeep
 !data/interim/.gitkeep
+!data/interim/nsidc0611-manifest.csv
 !data/processed/.gitkeep
+!data/processed/summary.csv
+!data/processed/seasonal/
+data/processed/seasonal/*
+!data/processed/seasonal/2024/
+data/processed/seasonal/2024/*
+!data/processed/seasonal/2024/summary.csv
 
 outputs/*
 !outputs/.gitkeep

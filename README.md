@@ -63,6 +63,8 @@ polar-memory download --start-year 1984 --end-year 1984
 파일 구조를 확인한다.
 
 ```bash
+polar-memory validate-downloads
+
 polar-memory inspect data/raw/nsidc0611/iceage_nh_12.5km_19840101_19841231_v4.1.nc
 ```
 
@@ -84,6 +86,37 @@ Blender 설치 후 640×640 프리뷰 프레임을 렌더링한다.
 blender --background --python blender/render.py -- \
   --input data/processed/snapshots \
   --output outputs/frames
+```
+
+연도·다년생 해빙 비율·범례를 렌더 프레임에 합성한다.
+
+```bash
+polar-memory compose \
+  --input outputs/frames \
+  --output outputs/composed
+```
+
+합성된 연도별 프레임을 약 25초짜리 H.264 영상으로 묶는다.
+
+```bash
+polar-memory encode \
+  --input outputs/composed \
+  --output outputs/final/memory-timeline.mp4 \
+  --seconds-per-frame 0.6
+```
+
+지도와 그래프를 분리하고 연도 사이를 부드럽게 전환한 편집 디자인 영상을
+바로 생성한다.
+
+```bash
+polar-memory editorial
+```
+
+도입·계절 변화·장기 변화·과거/현재 비교·마무리를 연결한 통합 프리뷰를
+생성한다.
+
+```bash
+polar-memory story
 ```
 
 테스트:

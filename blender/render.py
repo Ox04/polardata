@@ -20,6 +20,11 @@ def arguments() -> argparse.Namespace:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--resolution", type=int, default=256)
     parser.add_argument("--samples", type=int, default=32)
+    parser.add_argument("--strength", type=float, default=0.72)
+    parser.add_argument("--width", type=int, default=960)
+    parser.add_argument("--height", type=int, default=540)
+    parser.add_argument("--limit", type=int)
+    parser.add_argument("--stems", nargs="+")
     values = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else []
     return parser.parse_args(values)
 
@@ -87,26 +92,29 @@ def point_camera(camera: bpy.types.Object) -> None:
     camera.rotation_euler = direction.to_track_quat("-Z", "Y").to_euler()
 
 
-def configure_scene(samples: int) -> None:
+def configure_scene(samples: int, width: int, height: int) -> None:
     scene = bpy.context.scene
     scene.render.engine = "BLENDER_EEVEE_NEXT"
-    scene.render.resolution_x = 640
-    scene.render.resolution_y = 640
+    scene.render.resolution_x = width
+    scene.render.resolution_y = height
     scene.render.resolution_percentage = 100
     scene.render.image_settings.file_format = "PNG"
     scene.render.film_transparent = False
     scene.render.image_settings.color_mode = "RGBA"
-    scene.world.color = (0.004, 0.008, 0.015)
+    scene.world.use_nodes = True
+    background = scene.world.node_tree.nodes.get("Background")
+    background.inputs["Color"].default_value = (0.002, 0.006, 0.012, 1.0)
+    background.inputs["Strength"].default_value = 0.08
     scene.render.fps = 30
     scene.render.image_settings.color_depth = "8"
     scene.render.image_settings.compression = 30
     if hasattr(scene, "eevee") and hasattr(scene.eevee, "taa_samples"):
         scene.eevee.taa_samples = samples
 
-    bpy.ops.object.camera_add(location=(0.0, -9.6, 9.0))
+    bpy.ops.object.camera_add(location=(0.0, -6.8, 12.0))
     camera = bpy.context.object
     camera.data.type = "ORTHO"
-    camera.data.ortho_scale = 12.7
+    camera.data.ortho_scale = 11.2
     point_camera(camera)
     scene.camera = camera
 
@@ -138,25 +146,42 @@ def discover_frames(root: Path) -> list[tuple[Path, Path]]:
 
 def render_frames(args: argparse.Namespace) -> None:
     clear_scene()
-    configure_scene(args.samples)
+    configure_scene(args.samples, args.width, args.height)
     surface = make_grid(args.resolution)
     material, color_node = make_material()
     surface.data.materials.append(material)
 
     displacement_texture = bpy.data.textures.new("age-height", type="IMAGE")
     displacement_texture.extension = "CLIP"
+    displacement_texture.use_interpolation = True
+    displacement_texture.filter_size = 1.5
     modifier = surface.modifiers.new("age-displacement", type="DISPLACE")
     modifier.texture = displacement_texture
     modifier.texture_coords = "UV"
-    modifier.strength = 1.55
+    modifier.strength = args.strength
     modifier.mid_level = 0.0
+
+    smooth = surface.modifiers.new("age-smoothing", type="SMOOTH")
+    smooth.factor = 1.35
+    smooth.iterations = 4
+    smooth.use_x = False
+    smooth.use_y = False
+    smooth.use_z = True
+    for polygon in surface.data.polygons:
+        polygon.use_smooth = True
 
     args.output.mkdir(parents=True, exist_ok=True)
     scene = bpy.context.scene
-    for index, (height_path, preview_path) in enumerate(
-        discover_frames(args.input),
-        start=1,
-    ):
+    frames = discover_frames(args.input)
+    if args.stems:
+        selected = set(args.stems)
+        frames = [frame for frame in frames if frame[0].stem in selected]
+        missing = selected - {frame[0].stem for frame in frames}
+        if missing:
+            raise FileNotFoundError(f"선택한 프레임이 없습니다: {sorted(missing)}")
+    if args.limit is not None:
+        frames = frames[: args.limit]
+    for index, (height_path, preview_path) in enumerate(frames, start=1):
         height_image = bpy.data.images.load(str(height_path), check_existing=False)
         height_image.colorspace_settings.name = "Non-Color"
         color_image = bpy.data.images.load(str(preview_path), check_existing=False)
@@ -164,7 +189,7 @@ def render_frames(args: argparse.Namespace) -> None:
         color_node.image = color_image
 
         scene.frame_set(index)
-        scene.render.filepath = str(args.output / f"frame-{index:04d}.png")
+        scene.render.filepath = str(args.output / f"{height_path.stem}.png")
         bpy.ops.render.render(write_still=True)
 
         displacement_texture.image = None
