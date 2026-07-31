@@ -27,17 +27,19 @@
 원본 NetCDF 파일은 용량과 재배포 범위를 고려하여 Git 저장소에 포함하지
 않는다. 실행 방법과 원본 주소, 사용 범위와 해시 목록만 저장한다.
 
-### Noto Sans CJK
+### Wanted Sans
 
-- 폰트명: Noto Sans CJK
-- 제작·배포: Google / Adobe, Fedora 패키지
-- 설치 패키지: `google-noto-sans-cjk-fonts 2.004`
+- 폰트명: Wanted Sans 1.0.3
+- 제작·배포: 원티드랩
 - 라이선스: SIL Open Font License 1.1
-- 공식 저장소: https://github.com/notofonts/noto-cjk
-- 사용 내용: 영상의 한국어·영어 제목, 수치, 범례와 출처 표기
+- 공식 저장소: https://github.com/wanteddev/wanted-sans
+- 사용 내용: 최종 영상의 한국어·영어 제목, 수치, 범례와 출처 표기
 
-현재 영상은 시스템에 설치된 폰트를 사용해 글자를 영상 프레임에 렌더링한다.
-폰트 파일 자체는 저장소나 제출 파일에 포함하지 않는다.
+재현 가능한 렌더링을 위해 Regular·Bold 글꼴 파일과 원본 OFL 문서를
+`assets/fonts/wanted-sans/`에 보관한다. 제출 영상에는 글자가 픽셀로
+렌더링되며 폰트 파일 자체는 제출 ZIP에 포함하지 않는다.
+
+작품 설명서 DOCX에는 문서 호환성을 위해 Noto Sans CJK KR을 사용한다.
 
 ## 제작 도구
 
@@ -77,7 +79,7 @@
 > Data: Tschudi et al., EASE-Grid Sea Ice Age V4,
 > NSIDC-0611, NASA NSIDC DAAC,
 > https://doi.org/10.5067/UTAV7490FEPB  
-> Font: Noto Sans CJK, SIL Open Font License 1.1
+> Video font: Wanted Sans 1.0.3, SIL Open Font License 1.1
 
 ## 제출 전 확인
 

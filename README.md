@@ -11,9 +11,11 @@ NSIDC 해빙 연령 자료를 높이, 투명도와 색상으로 변환해 3D 애
 - 동일 주차 연도별 높이 맵·마스크·미리보기 생성
 - 2024년 주간 계절 프레임 생성
 - 연도별 해빙 연령 요약 CSV 생성
+- Blender 블록형 연도별 지도와 중간 3D 상태 렌더링
+- 북극 줌인 도입부와 패널 없는 V6 최종 영상 생성
 - 합성 데이터 기반 자동 테스트
 
-Blender 장면과 최종 영상 렌더링은 전처리 결과 검토 후 추가한다.
+현재 제출 후보는 `outputs/final/polar-memory-final-v7.mp4`이다.
 
 ## 설치
 
@@ -118,6 +120,69 @@ polar-memory editorial
 ```bash
 polar-memory story
 ```
+
+### 최종 V6 영상
+
+1984~2024년 제11주 자료를 블록형 3D 지도로 준비한다.
+
+```bash
+PYTHONPATH=src .venv/bin/python scripts/design_v4_assets.py prepare-range \
+  --start-year 1984 \
+  --end-year 2024 \
+  --stride 3 \
+  --output outputs/design-v4/annual-classes
+```
+
+연도별 1920×1080 블록형 지도를 렌더링한다.
+
+```bash
+blender --background --python blender/render_v4_years.py -- \
+  --classes outputs/design-v4/annual-classes \
+  --output outputs/design-v6/annual-maps \
+  --start-year 1984 \
+  --end-year 2024 \
+  --samples 8 \
+  --width 1920 \
+  --height 1080 \
+  --skip-existing
+```
+
+연도 사이에 블록 높이와 출현·소멸이 움직이는 중간 3D 상태를 렌더링한다.
+
+```bash
+blender --background --python blender/render_v4_transitions.py -- \
+  --classes outputs/design-v4/annual-classes \
+  --output outputs/design-v6/annual-transitions \
+  --start-year 1984 \
+  --end-year 2024 \
+  --steps 5 \
+  --samples 8 \
+  --width 1920 \
+  --height 1080 \
+  --skip-existing
+```
+
+작은 북극 원형 지도에서 실제 첫 데이터 장면으로 확대되는 도입부, 데이터
+지도와 마지막 직접 비교 장면을 이어 붙인 60fps 최종 영상을 만든다.
+
+```bash
+PYTHONPATH=src:scripts .venv/bin/python scripts/render_v4_final_video.py \
+  --maps outputs/design-v6/annual-maps \
+  --transition-maps outputs/design-v6/annual-transitions \
+  --output outputs/final/polar-memory-final-v7.mp4 \
+  --frame-rate 60 \
+  --intro-frames 210 \
+  --opening-hold 60 \
+  --closing-hold 120 \
+  --frames-per-state 8 \
+  --comparison-reveal 60 \
+  --comparison-hold 300
+```
+
+각 연도 사이에는 실제로 렌더링한 다섯 개의 중간 블록 상태를 사용하고,
+인접 상태를 8단계로 시간 보간해 60fps로 출력한다.
+마지막 비교는 같은 좌표의 1984년과 2024년 지도를 수직선 하나로 나눈다.
+화면 전체 페이드, 흐림 또는 생성형 모핑은 사용하지 않는다.
 
 테스트:
 
